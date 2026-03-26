@@ -1,0 +1,114 @@
+properties([
+    parameters([
+        //先行定义参数，每次移动提前设置移动文件和移动位置
+        string(
+            name: 'SourceDir',  // 参数名（后续通过 params.SourceDir 引用）
+            defaultValue: '//HID5272N.automotive-wan.com/build_result/cmb/master/20260318002600-test',  // 默认值（可留空，建议填常用值）
+            description: '待移动文件的源目录路径（例如：//服务器/目录/路径）',  // 提示说明
+            trim: true  // 自动去除输入的首尾空格，避免路径错误
+        ),
+        // 目标目录参数
+        string(
+            name: 'TargetDir',
+            defaultValue: '//HID5272N.automotive-wan.com/build_result/cmb/last_bin',
+            description: '文件移动的目标目录路径（例如：//服务器/目录/路径）',
+            trim: true
+        )
+    ])
+])
+
+
+node('win') {
+    
+    stage('move-files') {
+        def sourceDir = params.SourceDir
+        def targetDir = params.TargetDir
+
+        sh """
+		if [ -d "${targetDir}" ]; then
+			cp -f "${sourceDir}"/* "${targetDir}/"
+		else 
+			mkdir -p "${targetDir}"
+			cp -f "${sourceDir}"/* "${targetDir}/"
+		fi
+        """
+    }
+}
+
+
+
+
+//////////////////////////////////////
+properties([
+    parameters([
+        //  define the parmaters in advance 
+        string(
+            name: 'SourceDir', 
+			//defaultValue may we can define
+            defaultValue: '//HID5272N.automotive-wan.com/build_result/cmb/master/20260318002600-test',  
+            description: 'The source directory path of the file to be moved', 
+			//Automatically remove the leading and trailing spaces in the input to avoid path errors
+            trim: true  
+        ),
+        string(
+            name: 'TargetDir',
+            defaultValue: '//HID5272N.automotive-wan.com/build_result/cmb/master/last_bin',
+            description: 'The target directory path for file relocation',
+            trim: true
+        )
+    ])
+])
+
+
+node('win') {
+    
+    stage('move-files') {
+        def sourceDir = params.SourceDir
+        def targetDir = params.TargetDir
+
+        sh """
+			if [ -d "${targetDir}" ]; then
+            cp -rf "${sourceDir}"/* "${targetDir}/"
+			else 
+				mkdir -p "${targetDir}"
+				cp -rf "${sourceDir}"/* "${targetDir}/"
+			fi
+        """
+    }
+}
+///////////////////////////
+
+
+
+
+
+
+
+def serverFolder = "${serverRoot}\\build_result\\cmb\\${branch}\\${buildid}\\${variant}\\${MCU}"
+def targetDir = "${serverRoot}\\build_result\\cmb\\${branch}\\last_bin\\${variant}\\${MCU}"
+
+stage("Archive_move_files") {
+    
+
+
+    sh """
+        if [ -d "${targetDir}" ]; then
+
+        rm -f "${targetDir}"/*.json
+
+        cp -f "${serverFolder}"/*.json "${targetDir}/"
+
+        cp -rf "${serverFolder}/bin-gi" "${targetDir}/"
+        else
+        mkdir -p "${targetDir}"
+        rm -f "${targetDir}"/*.json
+
+        cp -f "${serverFolder}"/*.json "${targetDir}/"
+
+        cp -rf "${serverFolder}/bin-gi" "${targetDir}/"
+        fi
+    """
+}
+
+
+
