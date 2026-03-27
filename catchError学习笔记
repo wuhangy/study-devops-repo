@@ -1,0 +1,23 @@
+失败了时候不中断后续stage只需要抛出异常
+
+node {
+    def success = true
+
+    try {
+        stage('代码检查') {
+            sh 'lint-check.sh'
+        }
+    } catch (Exception e) {
+        success = false
+        echo "代码检查失败：${e}"
+        currentBuild.result = 'SUCCESS'
+    }
+
+    if (!success) {
+        echo "代码检查失败，但继续执行"
+    }
+
+    stage('后续步骤') {
+        sh 'other-steps.sh'
+    }
+}
