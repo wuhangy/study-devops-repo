@@ -24,7 +24,7 @@ node('HID5272N.automotive-wan.com-ssh'){
             checkout([$class: 'GitSCM', 
                 branches: [[name: '*/main']], 
                 userRemoteConfigs: [[
-                    credentialsId: 'wuhagy-token', 
+                    credentialsId: 'wuhangy-token', 
                     url: 'https://github.com/wuhangy/study-devops-repo.git'
                 ]]
             ])
