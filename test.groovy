@@ -42,7 +42,7 @@ node('HID5272N.automotive-wan.com-ssh'){
 
             sh """
                 #!/bin/bash
-                # 如果目标目录不存在，先创建
+                # 如果目标目录不存在，先创建 
                 if [ ! -d "${targetDir}" ]; then
                     mkdir -p "${targetDir}"
                 fi
