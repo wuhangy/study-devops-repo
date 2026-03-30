@@ -17,7 +17,6 @@ node('HID5272N.automotive-wan.com-ssh'){
             )
         ])
     ])
-
     timestamps {
         // --- 新增：从 GitHub 拉取代码阶段 ---
         stage('Checkout') {
