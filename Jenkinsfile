@@ -38,7 +38,7 @@ node('HID5272N.automotive-wan.com-ssh'){
         stage('move-files') {
             def sourceDir = params.SourceDir
             def targetDir = params.TargetDir
-
+ 
             sh """
                 #!/bin/bash
                 # 如果目标目录不存在，先创建
