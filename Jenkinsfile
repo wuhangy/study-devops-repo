@@ -1,4 +1,4 @@
-node('win'){
+node('HID5272N.automotive-wan.com-ssh'){
     // 定义参数 
     properties([
         parameters([
