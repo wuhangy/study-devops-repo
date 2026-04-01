@@ -1,0 +1,15 @@
+1、当修改了很多文件，想要commit 的文件较比较多的时候直接
+
+     git add . ':!<文件not>' 此时就是除了文件not，其他的修改的都会添加到缓存区
+
+2、若修改的文件较少：可直接
+
+      git add 文件1 文件2  
+
+3、也可以直接git add . 此时全部的文件都在缓存区在使用
+      git reset HEAD
+
+##删除远程分支
+git push origin --delete 分支名
+##添加到暂存区的文件如何退回
+git restore --staged 文件名
