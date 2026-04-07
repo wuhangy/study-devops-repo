@@ -1,0 +1,20 @@
+
+
+##当我的主分支已经坏掉了，无论如何进行修改，在最后push的时候都会有其他不干净的分支在上面
+
+
+###steps1
+git clean -xdf
+##这个命令会强制删除工作目录中所有 不被 Git 追踪 的文件和目录
+###steps2
+git reset --hard
+#这个命令会强制重置你的工作目录和暂存区到指定的提交状态
+#steps3
+git branch -D master
+##steps 4
+git checkout master
+##steps5 删除所在的分支
+git branch -D feature/HOS-34118
+##steps 6  最后再切回主要分支去
+git checkout -b feature/HOS-34118
+
