@@ -1,2 +1,6 @@
 *.log
-/DEBUG/*.groovy
+
+
+
+/DEBUG/*
+!/DEBUG/.gitkeep
