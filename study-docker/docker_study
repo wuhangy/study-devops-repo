@@ -1,0 +1,244 @@
+#docker笔记
+
+#镜像 (Image)：相当于“游戏安装包”。它是只读的,包含了运行程序所需的一切。(代码、环境依赖、配置文件)
+
+#容器 (Container)：相当于“运行中的游戏”。你是从镜像启动一个容器。镜像运行起来后,就是容器。
+
+#仓库 (Repository/Docker Hub)：相当于“应用商店”。你可以从这里下载别人做好的镜像(比如 Python、MySQL、Nginx)。
+
+
+运行一个真正的网页服务器 (Nginx)
+Bash
+docker run -d -p 8080:80 --name my_web1 nginx
+#docker run -d -p 8080:80 --name my-web nginx
+
+-d: 后台运行(不占用你的屏幕)。
+
+-p 8080:80: 端口映射。把你电脑的 8080 端口连接到容器里的 80 端口。
+
+--name: 给这个小房子取个名字
+--nginx Nginx(读作 “Engine-X”)是一个高性能的 HTTP 服务器和反向代理服务器,同时也可以作为邮件代理服务器
+接待员：当你访问 localhost:8080,你的浏览器发出请求,Nginx 在容器里“接待”了这个请求。
+返回页面：它会自动找到它肚子里的 index.html 文件(欢迎页面),然后送回给你的浏览器显示。
+不累的工人:它非常轻量、速度快、能同时处理成千上万个连接。很多大网站(比如淘宝、知乎、Netflix)都用它来应对海量用户访问。
+
+
+###使用docker 命令
+#查看正在运行的容器
+docker ps
+#查看所有容器(包括关掉的)
+docker ps -a
+#停止一个容器
+docker stop name
+#删除一个容器
+docker rm -f name_id
+#查看本地有哪些镜像
+docker images
+
+
+
+####第四阶段：实战自制镜像(从小白变高手)这是最关键的一步：把你自己的代码变成镜像。假设你有一个简单的 Python 文件 app.py。你需要写一个名为 Dockerfile 的秘籍：
+Dockerfile 
+to do list
+####################example:######################
+# 1. 基础镜像：我需要一个有 Python 的环境
+FROM python:3.9-slim
+##作用：使用 Python 3.9 的官方精简版镜像
+# 2. 设置工作目录：相当于进入容器内的 /app 文件夹
+WORKDIR /app
+##文件目录
+# 3. 把你当前文件夹的代码复制进去
+COPY . .
+
+# 4. 运行你的程序
+CMD ["python", "app.py"]
+构建并运行：
+
+Bash
+# 构建镜像,名字叫 my-python-app
+docker build -t my-python-app .
+
+# 运行它
+docker run my-python-app
+##构建并且运行
+# 构建镜像,名字叫 my-python-app
+docker bulid -t my_pyton-app .
+docker build -t my-python-app .
+
+# 运行它
+docker run my-python-app
+
+############例子web#####################################################
+
+
+
+### 第一步：创建你的“工程实验室”
+##新建一个文件夹，文件夹准备两个文件
+
+在这个文件夹里,我们要准备两个文件：
+
+1. index.html (你的网页内容)
+   新建一个文本文件,重命名为 index.html,内容如下：
+   html
+   <h1>我的第一个 Docker 网页！</h1>
+   <p>这是在容器里运行的,酷吧？</p>
+   
+
+2. Dockerfile (你的打包说明书)
+   注意： 文件名就叫 Dockerfile,没有后缀名。内容如下：
+   dockerfile
+   # 使用最轻量的服务器镜像
+   FROM nginx:alpine
+
+   # 把我们写的网页,复制到容器里 Nginx 默认存放网页的地方
+   COPY index.html /usr/share/nginx/html/
+   
+
+---
+
+### 第二步：把它变成“镜像” (Image)
+打开你的终端(Command Prompt / PowerShell / Terminal),定位到刚才那个文件夹,输入：
+
+bash
+docker build -t my-first-web .
+
+ -t: 给你的镜像起个标签(名字),叫 my-first-web。
+ .: 千万别漏了这个点！它告诉 Docker 在当前目录找说明书(Dockerfile)。
+
+---
+
+### 第三步：把“镜像”跑成“容器” (Container)
+现在,我们要把这个刚做好的“安装包”运行起来：
+
+bash
+docker run -d -p 8888:80 --name web-running my-first-web
+
+ 8888:80: 这是一道“传送门”。你访问电脑的 8888 端口,我就会把你传送到容器内部的 80 端口。
+
+---
+
+### 第四步：验收成果
+打开浏览器,在地址栏输入：
+localhost:8888
+
+看到你自己写的那个网页了吗？ 如果看到了,恭喜你！你已经完成了一个镜像构建 -> 容器部署的完整生命周期。
+
+---
+
+### 💡 此时作为“小白”的你,最需要掌握的三个排障绝招：
+
+ “里面情况怎么样？” —— 查看运行日志：
+    docker logs web-running
+
+ “我想钻进去看看！” —— 像开门一样进入容器内部：
+    ##docker exec -it web1 sh
+    docker exec -it web-running sh (进去后输入 exit 退出)
+ “我想重来,赶紧删掉！” —— 先停再删：
+    docker stop web-running 
+    docker rm web-running
+
+---
+
+现在,尝试修改一下你的 index.html 里的文字,然后再次执行 docker build 和 docker run(记得先删掉旧容器)。
+
+
+###docker compose 用一个 YAML 文件定义所有服务，一条命令启动所有容器。
+###################################docker-compose.yml############################################
+##当我要使用到很多容器的时候，比如说前端后端 数据库一起搭建的时候，需要一个一个构建然后在进行run，此时就会比较麻烦我直接使用docker compose yaml文件一键部署
+##一个yaml 文件
+# Docker Compose 文件版本
+version: '3.8'
+
+# 所有服务（容器）的定义
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0           # 使用官方 MySQL 8.0 镜像
+    environment:                # 环境变量配置
+      MYSQL_ROOT_PASSWORD: 123456  # root 用户密码
+    volumes:                    # 数据持久化
+      - mysql-data:/var/lib/mysql  # 卷名:容器内路径
+
+  # Redis 缓存服务
+  redis:
+    image: redis:alpine        # 轻量级 Redis 镜像
+
+  # Python 后端应用
+  python-app:
+    build: .                   # 使用当前目录的 Dockerfile 构建
+    ports:                     # 端口映射
+      - "8000:8000"           # 宿主机:容器
+    depends_on:                # 启动顺序依赖
+      - mysql
+      - redis
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx               # 使用官方 Nginx 镜像
+    ports:
+      - "80:80"               # HTTP 入口
+    volumes:                   # 配置文件挂载
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - python-app
+
+# 数据卷定义（用于持久化存储）
+volumes:
+  mysql-da  ta:                  # 声明 mysql-data 这个卷
+
+
+##最后启动 docker compose up 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

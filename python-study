@@ -1,0 +1,317 @@
+python数据 类型
+1、string = 'asd'
+2、list =["",""]
+3、tuple = ("","")
+4、dict = {"":"","":""}
+
+##数据类型抓换
+type (test) 转换成int int(string)
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+ 
+a = 21
+b = 10
+c = 0
+ 
+c = a + b
+print "1 - c 的值为：", c
+ 
+c = a - b
+print "2 - c 的值为：", c 
+ 
+c = a * b
+print "3 - c 的值为：", c 
+ 
+c = a / b
+print "4 - c 的值为：", c 
+ 
+c = a % b
+print "5 - c 的值为：", c
+ 
+# 修改变量 a 、b 、c
+a = 2
+b = 3
+c = a**b 
+print "6 - c 的值为：", c
+ 
+a = 10
+b = 5
+c = a//b 
+print "7 - c 的值为：", c
+
+
+
+
+==	等于 - 比较对象是否相等	(a == b) 返回 False。
+!=	不等于 - 比较两个对象是否不相等	(a != b) 返回 True。
+>	大于 - 返回x是否大于y	(a > b) 返回 False。
+<	小于 - 返回x是否小于y。所有比较运算符返回1表示真，返回0表示假。这分别与特殊的变量 True 和 False 等价。	(a < b) 返回 True。
+>=	大于等于 - 返回x是否大于等于y。	(a >= b) 返回 False。
+<=	小于等于 - 返回x是否小于等于y。	(a <= b) 返回 True。
+
+
+=	简单的赋值运算符	c = a + b 将 a + b 的运算结果赋值为 c
++=	加法赋值运算符	c += a 等效于 c = c + a
+-=	减法赋值运算符	c -= a 等效于 c = c - a
+*=	乘法赋值运算符	c *= a 等效于 c = c * a
+/=	除法赋值运算符	c /= a 等效于 c = c / a
+%=	取模赋值运算符	c %= a 等效于 c = c % a
+**=	幂赋值运算符	c **= a 等效于 c = c ** a
+//=	取整除赋值运算符	c //= a 等效于 c = c // a
+
+
+
+c =123
+list1= ["123","23"]
+#list1 = int(list1)
+# 将列表中的每个项都转换为整数
+list1 = [int(i) for i in list1]
+if (c in list1):
+    print ("in")
+else:
+    print ("not in")
+
+###python 判断条件
+
+
+if 判断条件1:
+    执行语句1……
+elif 判断条件2:
+    执行语句2……
+elif 判断条件3:
+    执行语句3……
+else:
+    执行语句4……
+
+
+
+
+###1-100以内的质数
+for i in range (2,101):
+    for j in range (2,int(i**0.5)+1):
+        if i%j == 0:
+            break
+    else:
+        primes.append(i)
+print(primes)
+
+
+
+
+Python pass 语句
+Python pass 是空语句，是为了保持程序结构的完整性。
+
+pass 不做任何事情，一般用做占位语句。
+
+Python 语言 pass 语句语法格式如下：
+
+
+
+
+python 字符串格式化符号:
+符号描述
+      %c	 格式化字符及其ASCII码
+      %s	 格式化字符串
+      %d	 格式化整数
+      %u	 格式化无符号整型
+      %o	 格式化无符号八进制数
+      %x	 格式化无符号十六进制数
+      %X	 格式化无符号十六进制数（大写）
+      %f	 格式化浮点数字，可指定小数点后的精度
+      %e	 用科学计数法格式化浮点数
+      %E	 作用同%e，用科学计数法格式化浮点数
+      %g	 %f和%e的简写
+      %G	 %F 和 %E 的简写
+      %p	 用十六进制数格式化变量的地址
+
+
+
+      #!/usr/bin/python
+# -*- coding: UTF-8 -*-
+ 
+import time
+ 
+localtime = time.localtime(time.time())
+print "本地时间为 :", localtime
+
+
+python 读取文件
+# 写入文件
+with open("example.txt", "w", encoding="utf-8") as f:
+    f.write("这是第一行\n")
+    f.write("这是第二行")
+# 运行到这里，文件已经自动关闭了，不需要写 f.close()
+
+# 读取文件
+with open("example.txt", "r", encoding="utf-8") as f:
+    content = f.read()
+    print(content)
+
+
+
+with open(r"C:\Users\uik05843\Desktop\study-files\wuhangy-study-repos\Docker-Project-Deployment\text.csv", "w", encoding="utf-8-sig") as f:
+    # 写入表头，列与列之间用英文逗号隔开
+    f.write("姓名,年龄,城市\n") 
+    # 写入数据
+    f.write("张三,25,北京\n")
+    f.write("李四,30,上海")
+
+
+
+
+##修改文件目录
+#     #!/usr/bin/python
+# # -*- coding: UTF-8 -*-
+
+import os, sys
+
+path = "/tmp"
+
+# 查看当前工作目录
+retval = os.getcwd()
+print( "当前工作目录为 %s" % retval)
+
+# 修改当前工作目录
+os.chdir( r"c:\Users\uik05843\Desktop\study-files\wuhangy-study-repos\Docker-Project-Deployment" )
+
+# 查看修改后的工作目录
+retval = os.getcwd()
+
+print ("目录修改成功 %s" % retval)
+
+map 函数
+def square(x) :            # 计算平方数
+     return x ** 2
+
+map(square, [1,2,3,4,5])   # 计算列表各个元素的平方
+[1, 4, 9, 16, 25]
+map(lambda x: x ** 2, [1, 2, 3, 4, 5])  # 使用 lambda 匿名函数
+[1, 4, 9, 16, 25]
+
+# 提供了两个列表，对相同位置的列表数据进行相加
+map(lambda x, y: x + y, [1, 3, 5, 7, 9], [2, 4, 6, 8, 10])
+[3, 7, 11, 15, 19]
+
+
+
+##类的方法
+如果说**函数**（Function）是执行特定任务的“动作”，那么**类**（Class）就是一个功能完备的“模具”或者“设计图”。
+
+在 Python 中，类的核心作用是：**把数据（属性）和处理数据的方法（函数）打包在一起。**
+
+---
+
+### 一、类的作用：为什么要用类？
+
+想象你要管理 100 只小狗的信息：
+* **不用类**：你需要定义 100 个 `name` 变量，100 个 `age` 变量。这会乱成一团。
+* **使用类**：你设计一张“狗的设计图”，规定每只狗都有名字和年龄。然后根据图纸“生产”出 100 只具体的狗。
+
+**主要优势：**
+1.  **复用性**：写好一个类，可以创建无数个实例。
+2.  **组织性**：把相关的变量和函数放在一起，代码清晰。
+3.  **继承性**：可以在现有的类基础上扩展新功能（比如在“动物类”的基础上衍生出“狗类”）。
+
+---
+
+### 二、类的基本语法
+
+我们用“员工管理”来举例：
+
+```python
+# 1. 定义类 (设计图)
+class Employee:
+    # 构造方法：当你创建实例时，这个方法会自动运行
+    def __init__(self, name, salary):
+        self.name = name       # 属性：员工名字
+        self.salary = salary   # 属性：员工薪水
+
+    # 自定义方法：员工会做的动作
+    def info(self):
+        print(f"员工姓名: {self.name}, 薪水: {self.salary}")
+
+# 2. 创建对象 (根据设计图生产出具体的员工)
+emp1 = Employee("张三", 5000)
+emp2 = Employee("李四", 8000)
+
+# 3. 使用对象
+emp1.info()  # 输出: 员工姓名: 张三, 薪水: 5000
+print(emp2.name)  # 直接访问属性，输出: 李四
+```
+
+---
+
+### 三、关键术语解析
+
+#### 1. `self` 是什么？
+`self` 代表**“当前的这个实例自己”**。
+* 当你调用 `emp1.info()` 时，`self` 就是 `emp1`。
+* 当你调用 `emp2.info()` 时，`self` 就是 `emp2`。
+它保证了张三的工资不会加到李四的头上。
+
+#### 2. `__init__` 是干嘛的？
+它叫**初始化方法**（构造函数）。当你写 `emp1 = Employee(...)` 时，Python 会自动调用它。它的作用是给这个新生成的对象“穿上衣服”（赋予初始属性）。
+
+---
+
+### 四、进阶：继承（扩展功能）
+
+类最强大的地方在于可以“套娃”。
+
+```python
+# 定义一个父类
+class Animal:
+    def speak(self):
+        print("动物在叫...")
+
+# 定义一个子类，继承 Animal
+class Dog(Animal):
+    # 重写父类的方法
+    def speak(self):
+        print("汪汪汪！")
+
+my_dog = Dog()
+my_dog.speak() # 输出: 汪汪汪！
+```
+
+---
+
+### 五、什么时候该用类？
+
+* 当你发现你有**多个相似的东西**，它们都有相同的特征（如：游戏里的多个敌人、多个网页按钮）。
+* 当你发现你需要**维护一些状态**（比如一个计算器，它需要记住上一次的结果）。
+* 当你发现你的代码里有很多**全局变量**，且多个函数都在修改这些变量。
+
+### 总结
+* **类 (Class)**：设计图（如：汽车设计图）。
+* **对象 (Object/Instance)**：根据设计图造出来的实物（如：你家楼下那辆红色的宝马）。
+* **属性**：对象身上的数据（颜色、排量）。
+* **方法**：对象能做的动作（前进、刹车）。
+
+class BankAccount:
+    def __init__(self, owner, money):
+        # self.owner 就是把名字贴在当前这个存折上
+        self.owner = owner
+        # self.money 就是把钱存进当前这个存折里
+        self.money = money
+
+    def deposit(self, amount):
+        """存钱"""
+        self.money += amount
+        print(f"【{self.owner}】存入了 {amount} 元，当前余额：{self.money} 元")
+
+    def withdraw(self, amount):
+        """取钱"""
+        if self.money >= amount:
+            self.money -= amount
+            print(f"【{self.owner}】取出了 {amount} 元，当前余额：{self.money} 元")
+        else:
+            print(f"【{self.owner}】余额不足！当前只有 {self.money} 元")
+
+# --- 实例化两个不同的账户 ---
+account_A = BankAccount("张三", 1000)
+account_B = BankAccount("李四", 100)
+
+# 执行操作
+account_A.deposit(500)   # 张三存了 500
+account_B.withdraw(200)  # 李四想取 200（但李四只有 100）
