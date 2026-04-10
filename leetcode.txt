@@ -1,0 +1,21 @@
+
+
+##要求： 给定一个数字列表 nums 和一个目标值 target，找出列表中两个数，使它们的和等于 target，返回这两个数的下标。
+输入： nums = [2, 7, 11, 15], target = 9
+输出： [0, 1]
+
+def qiuhe (nums,target):
+    result_nums =[]
+    for i in range (len(nums)):
+        for j in range (i,len(nums)):
+            if nums[i]+nums[j]==target:
+                result_nums.append(i)
+                result_nums.append(j)
+    if len(result_nums) ==0:
+        return ("不满足两数之和等于target")
+
+    return (result_nums)
+s = [2,8,1,15]
+t= 9
+print(qiuhe(s,t))
+
