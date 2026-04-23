@@ -1,0 +1,361 @@
+
+@Library("portal-jenkins-lib@main")
+@Library("portal-jenkins-lib-config@main")
+@Library("metric@main") _metric
+@Library("ccif@v0.27.0") _
+
+
+properties([
+    parameters([
+        choice( choices: ['ZCUD', 'ZCUP'], description: 'MCU name', name: 'mcuName'),
+        string( defaultValue: '', description: 'variant', name: 'variant', trim: true),
+        string( defaultValue: '', description: 'buildid', name: 'buildid', trim: true)
+    ])
+])
+
+withCredentials([usernamePassword(credentialsId: 'FunctionalAccount', passwordVariable: 'psw', usernameVariable: 'usrid')]) {
+    env.LOGNAME="${usrid}"
+    env.CONAN_PASSWORD="${psw}"
+}
+
+def update_db(){
+    def B = readJSON text: '{}'
+    B["${mcuName}_${variant}"]=pipeline_info
+	retry(5){
+		httpRequest acceptType: 'APPLICATION_JSON', contentType: 'APPLICATION_JSON',
+			httpMode: 'POST',
+            ignoreSslErrors: true,
+			requestBody: groovy.json.JsonOutput.toJson(B),
+			url: "${couchdb_cmb}/_design/example/_update/add_timestamp/${buildid}"
+		sleep(time:5,unit:"SECONDS")
+	}
+}
+
+def update_db_sonix(Map sonixData, String dbUrl = "${env.couchdb_cmb}") {
+    retry(5) {
+        def response = httpRequest(
+            url: "${dbUrl}/${buildid}",
+            acceptType: 'APPLICATION_JSON',
+            ignoreSslErrors: true,
+            validResponseCodes: '200,404'
+        )
+        
+        def currentDoc = (response.status == 200) ? readJSON(text: response.content) : ["_id": "${buildid}"]
+        def rootKey = "${mcuName}_${variant}"
+
+        if (!currentDoc[rootKey]) currentDoc[rootKey] = [:]
+        if (!currentDoc[rootKey]["sonix_data"]) currentDoc[rootKey]["sonix_data"] = [:]
+        
+        
+        currentDoc[rootKey]["sonix_data"]["buildid"] = "${buildid}".toString()
+        currentDoc[rootKey]["sonix_data"]["mcu"]     = "${mcuName}".toString()
+        currentDoc[rootKey]["sonix_data"]["variant"] = "${variant}".toString()
+        currentDoc[rootKey]["sonix_data"]["carline"] = "".toString()
+        
+        // String
+        sonixData.each { module, pathMap ->
+            if (pathMap instanceof Map) {
+                currentDoc[rootKey]["sonix_data"][module] = pathMap.collectEntries { k, v -> 
+                    [k, v?.toString()] 
+                }
+            } else {
+                currentDoc[rootKey]["sonix_data"][module] = pathMap?.toString()
+            }
+        }
+
+        httpRequest(
+            url: "${dbUrl}/_design/example/_update/add_timestamp/${buildid}",
+            httpMode: 'POST',
+            contentType: 'APPLICATION_JSON',
+            requestBody: groovy.json.JsonOutput.toJson(currentDoc),
+            ignoreSslErrors: true
+        )
+    }
+    println "[INFO] KPI updated successfully for ${mcuName}_${variant}"
+}
+
+env.couchdb_cmb = "https://marshal.cn3012.aws-cnno1.continental.cloud/apisix/couchdb-chy26/cmb"
+response = httpRequest "${couchdb_cmb}/${buildid}"
+resJSON = readJSON text: response.content
+env.branch = resJSON["${mcuName}_${variant}"].branch
+env.commit = resJSON["${mcuName}_${variant}"].commit
+env.json_file = resJSON["${mcuName}_${variant}"].json_file
+env.mono_repo = resJSON["${mcuName}_${variant}"].mono_repo
+env.variant = resJSON["${mcuName}_${variant}"].variant
+projectName = "chy-t1tp-26-zcu"
+squoreDgNumber = 'DG-098684'
+serverRoot = "\\\\HID5272N.automotive-wan.com"
+serverFolder = "${serverRoot}\\build_result\\cmb\\${branch}\\${buildid}\\${variant}\\${mcuName}"
+pipeline_info = readJSON text: '{}'
+// CARLINE 
+
+
+
+
+
+
+timestamps{
+    node("win"){
+        try{
+            stage("Init"){
+                manager.addShortText("${NODE_NAME}","black", "lightgreen","0px", "white")
+                manager.addShortText("MCU:${mcuName}","black", "lightgreen","0px", "white")
+                manager.addShortText("Variant:${variant}","black", "lightgreen","0px", "white")
+                manager.addShortText("${WORKSPACE}\\${mcuName}_${variant}","black", "lightgreen","0px", "white")
+                manager.addShortText("commit:${commit}","black", "lightgreen","0px", "white")
+                manager.addShortText("buildid:${buildid}","black", "lightgreen","0px", "white")
+            }
+
+            stage("Checkout"){
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "${commit}"]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [
+                        [$class: 'RelativeTargetDirectory', relativeTargetDir: "${mcuName}_${variant}"],
+                        [$class: 'CleanBeforeCheckout'],
+                        [$class: 'CloneOption', noTags: false, shallow: false, timeout: 10]
+                    ],
+                    userRemoteConfigs: [[
+                        url: "${mono_repo}",
+                        credentialsId: 'FunctionalAccount'
+                    ]]
+                ])
+            }
+
+            stage("Build"){
+                dir("${mcuName}_${variant}"){
+                    //build
+                    retry(2){
+                        sh"""
+                            # Warnings generated by Tresos are not shown
+                            sed -i 's/"-DmergeConfigs=true",/"-DmergeConfigs=true", "-Dwarning=false",/g' cmb/scripts/tresos_generate.py
+                            
+                            source ./econ_config.sh
+                            python run.py ${variant} rebuild_gi
+                        """
+                    }
+                    bat """
+                        xcopy /s /y out\\* ${serverFolder}\\econ_log\\*
+                        xcopy /s /y build\\${variant}.Debug\\log\\* ${serverFolder}\\build_log\\*
+                    """
+                }
+            }
+
+            stage("Build warning"){
+                dir("${mcuName}_${variant}"){
+                    sh"""
+                        source ./econ_config.sh
+                        python run.py ${variant} build_reports
+                    """
+                    bat """
+                        xcopy /s /y build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\build_reports\\out\\project\\Outputs\\Excel_Exporter\\* ${serverFolder}\\warning_reports\\*
+                        xcopy /s /y build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\build_reports\\out\\project\\Outputs\\Legacy_Jenkins_Exporter\\* ${serverFolder}\\warning_reports\\*
+
+                    """
+
+                   def warning_reportsDir = "build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\build_reports\\out\\project\\Outputs\\Excel_Exporter"
+
+                   def fileNames_warning_reports = bat(
+                        script: """
+                            @echo off
+                            for /f "delims=" %%a in ('dir /b /O-D "${warning_reportsDir}\\*.xlsm" 2^>nul') do (
+                                echo %%a
+                                exit /b
+                            )
+                        """, 
+                        returnStdout: true
+                    ).trim()
+
+
+                    update_db_sonix([
+                                        "build_warning": [
+                                        "excel": "${serverFolder}\\warning_reports\\${fileNames_warning_reports}",
+                                        "xml": "${serverFolder}\\warning_reports\\jenkins_exporter_results_project.xml"
+                                                        ]
+                                    ])
+
+                }
+            }
+
+            stage("Mapviewer"){
+                dir("${mcuName}_${variant}"){
+                    sh"""
+                        source ./econ_config.sh
+                        python run.py ${variant} mapviewer
+                    """
+                    bat """
+                        xcopy /s /y build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\mapviewer\\out\\project\\Outputs\\Excel_Exporter\\* ${serverFolder}\\mapviewer\\*
+                        xcopy /s /y build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\mapviewer\\out\\project\\Outputs\\Legacy_Jenkins_Exporter\\* ${serverFolder}\\mapviewer\\*
+
+                    """
+                    
+                    def mapviewerDir = "build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\mapviewer\\out\\project\\Outputs\\Excel_Exporter"
+                    def fileNames_Mapviewer = bat(
+                        script: """
+                            @echo off
+                            for /f "delims=" %%a in ('dir /b /O-D "${mapviewerDir}\\*.xlsm" 2^>nul') do (
+                                echo %%a
+                                exit /b
+                            )
+                        """, 
+                        returnStdout: true
+                    ).trim()
+                    update_db_sonix([
+                                "mapviewer": [
+                                                "excel": "${serverFolder}\\mapviewer\\${fileNames_Mapviewer}",
+                                                "xml": "${serverFolder}\\mapviewer\\jenkins_exporter_results_project.xml"
+                                            ]
+                                    ])
+                }
+            }
+
+            stage("SWATT"){
+                dir("${mcuName}_${variant}"){
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                        sh """
+                            source ./econ_config.sh
+                            #python run.py swatt '--opt=-a="-ctc mcdc"'
+                            python run.py swatt '--opt=-a="-ctc mcdc" -l jenkins\\UT_list\\UT_list_${mcuName}.txt'
+                        """
+                    }
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                        sh """
+                            source ./econ_config.sh
+                            python run.py swatt_report
+                        """
+                    }
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                        bat"""
+                            xcopy /s /y build\\default\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\swatt\\out\\swatt_report.odt ${serverFolder}\\swatt_report\\*
+                            xcopy /s /y build\\default\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\swatt\\out\\logfile.swatt_log ${serverFolder}\\swatt_report\\*
+                            xcopy /s /y build\\default\\log\\swatt.log ${serverFolder}\\swatt_report\\*
+                        """
+                    update_db_sonix([
+                            "swatt": [
+                                "odt": "${serverFolder}\\swatt_report\\swatt_report.odt",
+                                 "log":"${serverFolder}\\swatt_report\\logfile.swatt_log"
+            
+                                    ]
+                                ])
+                    }
+                }
+            }
+
+            stage("QTools"){
+                dir("${mcuName}_${variant}"){
+                    sh"""
+                        source ./econ_config.sh
+                        python run.py ${variant} qtools
+                    """
+                    bat """
+                        xcopy /s /y build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\qtools\\out\\group\\Outputs\\Excel_Exporter\\* ${serverFolder}\\QTools\\*
+                        xcopy /s /y build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\qtools\\out\\group\\Outputs\\Legacy_Jenkins_Exporter\\* ${serverFolder}\\QTools\\*
+
+                    """
+                        
+
+                        def qtoolsDir = "build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\qtools\\out\\group\\Outputs\\Excel_Exporter"
+                        def fileNames_qtools = bat(
+                            script: """
+                                @echo off
+                                for /f "delims=" %%a in ('dir /b /O-D "${qtoolsDir}\\*.xlsm" 2^>nul') do (
+                                    echo %%a
+                                    exit /b
+                                )
+                                """, 
+                            returnStdout: true
+                        ).trim()
+
+                    update_db_sonix([
+                            "qtools": [
+                                "excel": "${serverFolder}\\QTools\\${fileNames_qtools}",
+                                "xml": "${serverFolder}\\QTools\\jenkins_exporter_results_group.xml"
+                            ]
+                        ])
+
+                }
+            }
+
+            stage("K_Metrics"){
+                dir("${mcuName}_${variant}"){
+                    catchError(message: "message", buildResult: 'SUCCESS', stageResult: 'FAILURE'){
+                        ccif.init()
+                        Map resK1 = metric.k1([
+                            projectName         : projectName,
+                            createSquoreInput   : false,
+                            dgNumber            : squoreDgNumber,
+                            swDashboardFile     : "jenkins\\UT_list\\swdb_${mcuName}.xls",
+                            filePropertiesFile  : "app\\variants\\${variant}\\files_properties.xml",
+                            junitLogFile        : "build\\default\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\swatt\\out\\logfile.swatt_log",
+                        ])
+
+
+                        pipeline_info.k1 = resK1.k1
+                        pipeline_info.k1_lite = resK1.k1Lite
+                        pipeline_info.k1_shortfall = 100 - pipeline_info.k1
+                        update_db_sonix([
+                            "swatt": [
+                                "odt": "${serverFolder}\\swatt_report\\swatt_report.odt",
+                                 "log":"${serverFolder}\\swatt_report\\logfile.swatt_log",
+                                "k1": "${pipeline_info.k1}",
+                                "k1_lite": "${pipeline_info.k1_lite}",
+                                "k1_shortfall": "${pipeline_info.k1_shortfall}"
+            
+                            ]
+                        ])
+
+                        Map resK2 = metric.k2([
+                            projectName         : projectName,
+                            createSquoreInput   : false,
+                            dgNumber            : squoreDgNumber,
+                            jenkinsExporterFile : "build\\${variant}.Debug\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\qtools\\out\\group\\Outputs\\Legacy_Jenkins_Exporter\\jenkins_exporter_results_group.xml",
+                        ])
+
+                        pipeline_info.k2 = resK2.k2
+                        update_db()
+                         update_db_sonix([
+                           "qtools": [
+                                 "excel": "${serverFolder}\\QTools\\${fileNames_qtools}",
+                                "xml": "${serverFolder}\\QTools\\jenkins_exporter_results_group.xml",
+                                 "k2": "${pipeline_info.k2}"
+                                    ]
+                                 ])
+
+                        println "K1 = ${resK1}"
+
+                        println "k2 = ${resK2}"
+                        // Generate the summary of the SWATT results
+                        def totalsummary = tools.junit.getSummary("build\\default\\app\\tools\\ci_scripts\\cmb_swp_config\\tools\\swatt\\out\\logfile.swatt_log")
+                        println("SWATT summary: passed:${totalsummary.passCount}, error:${totalsummary.errorCount}, failed:${totalsummary.failCount}, skipped:${totalsummary.skipCount}")
+                    }
+                }
+            }
+            
+
+        }catch(e){
+            emailext(
+                subject: "T1TP UT FAILED:Build of ${env.JOB_NAME} - #${env.BUILD_NUMBER}",
+                body: """
+                    <html>
+                        <body>
+                        <p>buildid:${buildid}</p> 
+                        <p>MCU: <b>${mcuName}</b></p>
+                        <p>Branch: <b>${branch}</b></p>
+                        <p>Variant: <b>${variant}</b></p>
+                        <p>Commit: <b>${commit}</b></p>
+                        <p>json_file: <b>${json_file}</b></p>
+                        <p>Build Node: <b>${env.NODE_NAME}</b></p>
+                        <p>WORKSPACE: <b>${WORKSPACE}\\${variant}</b></p>
+                        <p>Check console output at <a href=${env.BUILD_URL}>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a></p>
+                        </body>
+                    </html>
+                """,
+                mimeType: 'text/html',
+                //to: "yuedong.2.li@aumovio.com"
+                  to: "hangyin.2.wu-EXT@aumovio.com"
+            )
+            throw e
+        }
+    }
+}
